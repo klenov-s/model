@@ -1,7 +1,11 @@
 <?
 
 class session{
-	protected $ses_name = 'sess';
+	protected $cookieName = 'sess';
+	protected $path = '/var/www/cache/';
+	protected $lifeTime = 1800;
+	protected $time = [];
+	protected $text,$hash;
 	protected function timePart($time){
 		$tmp = substr(time()+$time,0,-3) - 1500000;
 		return $tmp;
@@ -10,29 +14,30 @@ class session{
 		return md5(time());
 	}
 	protected function setCookie(){
-		setCookie($this->ses_name,$this->time.':'.$this->id,0,'/','.klenov.su');
+		setCookie($this->cookieName,$this->time['real'].':'.$this->id,0,'/','.klenov.su');
 	}
-	public function __construct(){
-		$this->path = '/var/www/cache/';
-		$this->time = $this->timePart(1800);
-		if($_COOKIE[$this->ses_name]){//кука есть
-			list($time,$id) = explode(':',$_COOKIE[$this->ses_name]);
-			if(is_file($this->path.$time.'/'.$id) && $time!=$this->time){//проверяем файл и древность
-				rename($this->path.$time.'/'.$id,$this->path.$this->time.'/'.$id);
-				$this->setCookie();
+	public function __construct($params){
+		$this->params = implode('',$params);
+		$this->time['real'] = $this->timePart(time());
+		if($_COOKIE[$this->cookieName]){//кука есть
+			list($this->time['file'],$id) = explode(':',$_COOKIE[$this->cookieName]);
+			if(is_file($this->path.$time.'/'.$id)){//если файл есть и сигнатура ок - читаем
+				$text = file_get_contents($path);
+				if(substr($text,0,strlen($this->params))===$this->params) $this->text = substr($text,strlen($this->params));
 			}
-		}else{//делаем новую
-			list($time,$id) = [$this->time,$this->makeID()];
-		    $this->setCookie();
 		}
+		if(!$this->text){//делаем новую
+			list($time['file'],$id) = [$this->time['real'],$this->makeID()];
+		    $this->setCookie();
+		}else $this->hash = md5($this->text);
 	}
 	public function open(){
 		global $user;
-		$path = $this->path.$this->time.'/'.$this->id;
-    	if(is_file($path)) $user = unserialize(file_get_contents($path));
+    	if($this->text) $user = unserialize($this->text);
 	}
 	public function close(){
         global $user;
+
         file_put_contents(serialize($user));
 	}
 }

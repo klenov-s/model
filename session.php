@@ -16,6 +16,7 @@ class session{
 	protected function setCookie(){
 		setCookie($this->cookieName,$this->time['real'].':'.$this->id,0,'/','.klenov.su');
 	}
+
 	public function __construct($params){
 		$this->params = implode('',$params);
 		$this->time['real'] = $this->timePart(time());
